@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/Aquila-f/photo-slider/internal/handler"
+	"github.com/Aquila-f/photo-slider/internal/photo"
 )
 
 //go:embed static/index.html
@@ -23,15 +24,18 @@ func main() {
 		log.Fatalf("invalid directory: %s", *dir)
 	}
 
-	// TODO: replace with real impls
-	lh := handler.NewListHandler(nil)
-	rh := handler.NewReadHandler(nil, nil)
+	r := photo.NewDirResolver(absDir)
+	rd := photo.NewFileReader()
+	lh := handler.NewListHandler(r)
+	rh := handler.NewReadHandler(r, rd)
 
-	r := setupRouter(lh, rh)
+	router := setupRouter(lh, rh)
 
 	log.Printf("Serving photos from: %s", absDir)
 	log.Printf("Open http://localhost:%s", *port)
-	r.Run(":" + *port)
+	if err := router.Run(":" + *port); err != nil {
+		log.Fatalf("server error: %v", err)
+	}
 }
 
 func isDir(path string) bool {
