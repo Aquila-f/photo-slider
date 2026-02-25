@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Slideshow</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .slideshow {
+      width: 100%;
+      max-width: 1024px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .image-wrap {
+      background: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-wrap img {
+      max-width: 100%;
+      max-height: 72vh;
+      object-fit: contain;
+      display: block;
+    }
+
+    .filename {
+      margin-top: 0.6rem;
+      font-size: 0.8rem;
+      color: #666;
+      min-height: 1.2em;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 0.45rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #3a3a3a; }
+    button:disabled { opacity: 0.3; cursor: default; }
+    button.playing { background: #0a84ff; border-color: #0a84ff; }
+
+    .counter {
+      font-size: 0.9rem;
+      color: #888;
+      min-width: 72px;
+    }
+
+    .interval-row {
+      margin-top: 0.8rem;
+      font-size: 0.82rem;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .interval-row input[type=range] {
+      width: 100px;
+      accent-color: #0a84ff;
+    }
+
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #444;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .dot.active { background: #0a84ff; }
+
+    .empty { color: #555; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <div class="slideshow" x-data="slideshow()" x-init="init()">
+
+    <div class="image-wrap">
+      <template x-if="images.length === 0">
+        <p class="empty">No images found.</p>
+      </template>
+      <template x-if="images.length > 0">
+        <img :src="'/images/' + images[current]" :alt="images[current]">
+      </template>
+    </div>
+
+    <p class="filename" x-text="images[current] ?? ''"></p>
+
+    <div class="controls">
+      <button @click="prev()" :disabled="images.length === 0">&#8249;</button>
+      <span class="counter" x-text="images.length ? (current + 1) + ' / ' + images.length : '-'"></span>
+      <button @click="next()" :disabled="images.length === 0">&#8250;</button>
+      <button @click="togglePlay()" :class="{ playing }" :disabled="images.length === 0"
+        x-text="playing ? '⏸' : '▶'"></button>
+    </div>
+
+    <div class="interval-row">
+      <span>interval:</span>
+      <input type="range" min="1" max="30" x-model.number="interval" @change="restartIfPlaying()">
+      <span x-text="interval + 's'"></span>
+    </div>
+
+    <div class="dots">
+      <template x-for="(img, i) in images" :key="i">
+        <div class="dot" :class="{ active: i === current }" @click="current = i"></div>
+      </template>
+    </div>
+
+  </div>
+
+  <script>
+    function slideshow() {
+      return {
+        images: [],
+        current: 0,
+        playing: false,
+        interval: 3,
+        _timer: null,
+
+        async init() {
+          const res = await fetch('/api/images')
+          const data = await res.json()
+          this.images = data ?? []
+          if (this.images.length > 0) this.togglePlay()
+        },
+
+        preloadAdjacent(index) {
+          const targets = [
+            (index + 1) % this.images.length,
+            (index - 1 + this.images.length) % this.images.length,
+          ]
+          targets.forEach(i => { new Image().src = '/images/' + this.images[i] })
+        },
+
+        next() {
+          this.current = (this.current + 1) % this.images.length
+          this.preloadAdjacent(this.current)
+        },
+
+        prev() {
+          this.current = (this.current - 1 + this.images.length) % this.images.length
+          this.preloadAdjacent(this.current)
+        },
+
+        togglePlay() {
+          this.playing = !this.playing
+          if (this.playing) {
+            this._timer = setInterval(() => this.next(), this.interval * 1000)
+          } else {
+            clearInterval(this._timer)
+          }
+        },
+
+        restartIfPlaying() {
+          if (!this.playing) return
+          clearInterval(this._timer)
+          this._timer = setInterval(() => this.next(), this.interval * 1000)
+        },
+      }
+    }
+  </script>
+</body>
+</html>
