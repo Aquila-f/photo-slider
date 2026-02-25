@@ -1,0 +1,22 @@
+# Binaries
+photo-slider
+bin/
+
+# Photo uploads (runtime data)
+photo/
+
+# Go
+vendor/
+*.test
+*.out
+coverage.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
