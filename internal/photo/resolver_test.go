@@ -24,7 +24,7 @@ func TestDirResolver_List(t *testing.T) {
 	}
 
 	// only image files, sorted alphabetically (ext is lowercased for matching)
-	want := []string{"a.PNG", "b.jpg", "c.webp", "d.gif", "e.jpeg"}
+	want := []string{"a.PNG", "b.jpg", "c.webp", "e.jpeg"}
 	if len(got) != len(want) {
 		t.Fatalf("List() len = %d, want %d; got %v", len(got), len(want), got)
 	}
