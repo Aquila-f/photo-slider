@@ -45,8 +45,6 @@ func (c *ImageCompressor) Compress(_ context.Context, data []byte) ([]byte, erro
 		err = imaging.Encode(&buf, img, imaging.JPEG, imaging.JPEGQuality(jpegQuality))
 	case "png":
 		err = imaging.Encode(&buf, img, imaging.PNG)
-	case "gif":
-		err = imaging.Encode(&buf, img, imaging.GIF)
 	default:
 		return data, nil
 	}

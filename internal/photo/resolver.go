@@ -13,8 +13,7 @@ type Resolver interface {
 }
 
 var imageExts = map[string]bool{
-	".jpg": true, ".jpeg": true, ".png": true,
-	".gif": true, ".webp": true,
+	".jpg": true, ".jpeg": true, ".png": true, ".webp": true,
 }
 
 type DirResolver struct {
