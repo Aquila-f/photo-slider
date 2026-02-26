@@ -2,9 +2,6 @@
 photo-slider
 bin/
 
-# Photo uploads (runtime data)
-photo/
-
 # Go
 vendor/
 *.test
