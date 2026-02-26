@@ -27,8 +27,9 @@ func main() {
 	r := photo.NewDirResolver(absDir)
 	rd := photo.NewFileReader()
 	c := photo.NewImageCompressor()
+	ca := photo.NewFixedSizeMapCacher(256)
 	lh := handler.NewListHandler(r)
-	rh := handler.NewReadHandler(r, rd, c)
+	rh := handler.NewReadHandler(r, rd, c, ca)
 
 	router := setupRouter(lh, rh)
 
