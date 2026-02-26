@@ -8,12 +8,13 @@ import (
 )
 
 type ReadHandler struct {
-	resolver photo.Resolver
-	reader   photo.Reader
+	resolver   photo.Resolver
+	reader     photo.Reader
+	compressor photo.Compressor
 }
 
-func NewReadHandler(r photo.Resolver, rd photo.Reader) *ReadHandler {
-	return &ReadHandler{resolver: r, reader: rd}
+func NewReadHandler(r photo.Resolver, rd photo.Reader, c photo.Compressor) *ReadHandler {
+	return &ReadHandler{resolver: r, reader: rd, compressor: c}
 }
 
 func (h *ReadHandler) Handle(c *gin.Context) {
@@ -24,6 +25,11 @@ func (h *ReadHandler) Handle(c *gin.Context) {
 		return
 	}
 	data, err := h.reader.Read(c.Request.Context(), path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	data, err = h.compressor.Compress(c.Request.Context(), data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

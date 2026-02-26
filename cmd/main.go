@@ -26,8 +26,9 @@ func main() {
 
 	r := photo.NewDirResolver(absDir)
 	rd := photo.NewFileReader()
+	c := photo.NewImageCompressor()
 	lh := handler.NewListHandler(r)
-	rh := handler.NewReadHandler(r, rd)
+	rh := handler.NewReadHandler(r, rd, c)
 
 	router := setupRouter(lh, rh)
 
