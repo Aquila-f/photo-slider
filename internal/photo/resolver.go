@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -40,7 +39,6 @@ func (r *DirResolver) List(_ context.Context) ([]string, error) {
 			names = append(names, e.Name())
 		}
 	}
-	sort.Strings(names)
 	return names, nil
 }
 
