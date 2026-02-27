@@ -25,7 +25,7 @@ func main() {
 	}
 
 	// TODO: allow users to select photo sources (e.g. local dir, remote) via config file
-	src := photo.NewDirSource(photo.NewDirResolver(absDir), photo.NewFileReader())
+	src := photo.NewDirSource(absDir)
 	c := photo.NewImageCompressor()
 	ca := photo.NewFixedSizeMapCacher(256)
 	lh := handler.NewListHandler(src)
