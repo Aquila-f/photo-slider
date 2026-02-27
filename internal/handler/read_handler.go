@@ -9,14 +9,13 @@ import (
 )
 
 type ReadHandler struct {
-	resolver   photo.Resolver
-	reader     photo.Reader
+	source     photo.Source
 	compressor photo.Compressor
 	cacher     photo.Cacher
 }
 
-func NewReadHandler(r photo.Resolver, rd photo.Reader, c photo.Compressor, ca photo.Cacher) *ReadHandler {
-	return &ReadHandler{resolver: r, reader: rd, compressor: c, cacher: ca}
+func NewReadHandler(s photo.Source, c photo.Compressor, ca photo.Cacher) *ReadHandler {
+	return &ReadHandler{source: s, compressor: c, cacher: ca}
 }
 
 func (h *ReadHandler) Handle(c *gin.Context) {
@@ -30,14 +29,9 @@ func (h *ReadHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	path, err := h.resolver.Resolve(ctx, token)
+	data, err := h.source.Read(ctx, token)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "photo not found"})
-		return
-	}
-	data, err := h.reader.Read(ctx, path)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	data, err = h.compressor.Compress(ctx, data)

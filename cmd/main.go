@@ -25,12 +25,11 @@ func main() {
 	}
 
 	// TODO: allow users to select photo sources (e.g. local dir, remote) via config file
-	r := photo.NewDirResolver(absDir)
-	rd := photo.NewFileReader()
+	src := photo.NewDirSource(photo.NewDirResolver(absDir), photo.NewFileReader())
 	c := photo.NewImageCompressor()
 	ca := photo.NewFixedSizeMapCacher(256)
-	lh := handler.NewListHandler(r)
-	rh := handler.NewReadHandler(r, rd, c, ca)
+	lh := handler.NewListHandler(src)
+	rh := handler.NewReadHandler(src, c, ca)
 
 	router := setupRouter(lh, rh)
 

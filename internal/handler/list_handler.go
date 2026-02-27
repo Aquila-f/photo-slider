@@ -8,15 +8,15 @@ import (
 )
 
 type ListHandler struct {
-	resolver photo.Resolver
+	source photo.Source
 }
 
-func NewListHandler(r photo.Resolver) *ListHandler {
-	return &ListHandler{resolver: r}
+func NewListHandler(s photo.Source) *ListHandler {
+	return &ListHandler{source: s}
 }
 
 func (h *ListHandler) Handle(c *gin.Context) {
-	images, err := h.resolver.List(c.Request.Context())
+	images, err := h.source.List(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
