@@ -24,6 +24,7 @@ func main() {
 		log.Fatalf("invalid directory: %s", *dir)
 	}
 
+	// TODO: allow users to select photo sources (e.g. local dir, remote) via config file
 	r := photo.NewDirResolver(absDir)
 	rd := photo.NewFileReader()
 	c := photo.NewImageCompressor()
