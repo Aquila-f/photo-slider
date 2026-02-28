@@ -2,13 +2,18 @@ package main
 
 import (
 	_ "embed"
+	"context"
 	"flag"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/Aquila-f/photo-slider/internal/domain"
 	"github.com/Aquila-f/photo-slider/internal/handler"
 	"github.com/Aquila-f/photo-slider/internal/photo"
+	"github.com/Aquila-f/photo-slider/internal/service"
+	"github.com/Aquila-f/photo-slider/internal/storage"
+	"github.com/Aquila-f/photo-slider/internal/strategy"
 )
 
 //go:embed static/index.html
@@ -25,13 +30,20 @@ func main() {
 	}
 
 	// TODO: allow users to select photo sources (e.g. local dir, remote) via config file
-	src := photo.NewDirSource(absDir)
-	c := photo.NewImageCompressor()
-	ca := photo.NewFixedSizeMapCacher(256)
-	lh := handler.NewListHandler(src)
-	rh := handler.NewReadHandler(src, c, ca)
+	src := &domain.Source{
+		ID:       "local",
+		Provider: storage.NewLocalFSProvider(absDir),
+	}
+	sources := map[string]*domain.Source{src.ID: src}
+	albums := make(map[string]*domain.Album)
 
-	router := setupRouter(lh, rh)
+	svc := service.NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), nil, 3)
+	if err := svc.SyncAlbums(context.Background()); err != nil {
+		log.Fatalf("failed to sync albums: %v", err)
+	}
+
+	api := handler.NewAlbumAPI(svc, photo.NewImageCompressor(), photo.NewFixedSizeMapCacher(256))
+	router := handler.SetupRouter(indexHTML, api)
 
 	log.Printf("Serving photos from: %s", absDir)
 	log.Printf("Open http://localhost:%s", *port)
