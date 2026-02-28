@@ -26,6 +26,33 @@
       text-align: center;
     }
 
+    .album-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .album-label {
+      font-size: 0.82rem;
+      color: #666;
+    }
+
+    .album-bar select {
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 0.35rem 0.7rem;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      max-width: 280px;
+    }
+
+    .album-bar select:focus { outline: none; border-color: #0a84ff; }
+
     .image-wrap {
       background: #1a1a1a;
       border-radius: 8px;
@@ -48,6 +75,9 @@
       font-size: 0.8rem;
       color: #666;
       min-height: 1.2em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .controls {
@@ -118,22 +148,34 @@
 <body>
   <div class="slideshow" x-data="slideshow()" x-init="init()">
 
+    <div class="album-bar">
+      <span class="album-label">Album:</span>
+      <select x-model="currentAlbum" @change="loadPhotos()" :disabled="albums.length === 0">
+        <template x-if="albums.length === 0">
+          <option value="">No albums</option>
+        </template>
+        <template x-for="album in albums" :key="album">
+          <option :value="album" x-text="album || '(root)'"></option>
+        </template>
+      </select>
+    </div>
+
     <div class="image-wrap">
-      <template x-if="images.length === 0">
+      <template x-if="photos.length === 0">
         <p class="empty">No images found.</p>
       </template>
-      <template x-if="images.length > 0">
-        <img :src="'/images/' + images[current]" :alt="images[current]">
+      <template x-if="photos.length > 0">
+        <img :src="photoUrl(photos[current])" :alt="photos[current]">
       </template>
     </div>
 
-    <p class="filename" x-text="images[current] ?? ''"></p>
+    <p class="filename" x-text="photos[current] ?? ''"></p>
 
     <div class="controls">
-      <button @click="prev()" :disabled="images.length === 0">&#8249;</button>
-      <span class="counter" x-text="images.length ? (current + 1) + ' / ' + images.length : '-'"></span>
-      <button @click="next()" :disabled="images.length === 0">&#8250;</button>
-      <button @click="togglePlay()" :class="{ playing }" :disabled="images.length === 0"
+      <button @click="prev()" :disabled="photos.length === 0">&#8249;</button>
+      <span class="counter" x-text="photos.length ? (current + 1) + ' / ' + photos.length : '-'"></span>
+      <button @click="next()" :disabled="photos.length === 0">&#8250;</button>
+      <button @click="togglePlay()" :class="{ playing }" :disabled="photos.length === 0"
         x-text="playing ? '⏸' : '▶'"></button>
     </div>
 
@@ -144,7 +186,7 @@
     </div>
 
     <div class="dots">
-      <template x-for="(img, i) in images" :key="i">
+      <template x-for="(photo, i) in photos" :key="i">
         <div class="dot" :class="{ active: i === current }" @click="current = i"></div>
       </template>
     </div>
@@ -154,34 +196,51 @@
   <script>
     function slideshow() {
       return {
-        images: [],
+        albums: [],
+        currentAlbum: '',
+        photos: [],
         current: 0,
         playing: false,
         interval: 3,
         _timer: null,
 
         async init() {
-          const res = await fetch('/api/images')
-          const data = await res.json()
-          this.images = data ?? []
-          if (this.images.length > 0) this.togglePlay()
+          const res = await fetch('/api/albums')
+          this.albums = await res.json() ?? []
+          if (this.albums.length > 0) {
+            this.currentAlbum = this.albums[0]
+            await this.loadPhotos()
+          }
+        },
+
+        async loadPhotos() {
+          clearInterval(this._timer)
+          this.playing = false
+          this.current = 0
+          const res = await fetch('/api/albums/' + encodeURIComponent(this.currentAlbum))
+          this.photos = await res.json() ?? []
+          if (this.photos.length > 0) this.togglePlay()
+        },
+
+        photoUrl(token) {
+          return '/photos/' + encodeURIComponent(this.currentAlbum) + '/' + token
         },
 
         preloadAdjacent(index) {
           const targets = [
-            (index + 1) % this.images.length,
-            (index - 1 + this.images.length) % this.images.length,
+            (index + 1) % this.photos.length,
+            (index - 1 + this.photos.length) % this.photos.length,
           ]
-          targets.forEach(i => { new Image().src = '/images/' + this.images[i] })
+          targets.forEach(i => { new Image().src = this.photoUrl(this.photos[i]) })
         },
 
         next() {
-          this.current = (this.current + 1) % this.images.length
+          this.current = (this.current + 1) % this.photos.length
           this.preloadAdjacent(this.current)
         },
 
         prev() {
-          this.current = (this.current - 1 + this.images.length) % this.images.length
+          this.current = (this.current - 1 + this.photos.length) % this.photos.length
           this.preloadAdjacent(this.current)
         },
 
