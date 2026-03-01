@@ -12,6 +12,9 @@ coverage.txt
 .DS_Store
 Thumbs.db
 
+# Config (contains local paths)
+config.yaml
+
 # IDE
 .vscode/
 .idea/
