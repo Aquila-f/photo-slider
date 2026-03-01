@@ -20,6 +20,9 @@ func NewAlbumService(sources map[string]*domain.Source, albums map[string]*domai
 }
 
 func (s *AlbumService) SyncAlbums(ctx context.Context) error {
+	for k := range s.albums {
+		delete(s.albums, k)
+	}
 	for _, src := range s.albumSources {
 		snaps, err := src.Provider.Walk(ctx, "", s.maxDepth)
 		if err != nil {
