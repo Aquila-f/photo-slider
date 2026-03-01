@@ -6,7 +6,7 @@ import (
 	"github.com/Aquila-f/photo-slider/internal/domain"
 )
 
-type FolderAlbumStrategy struct {}
+type FolderAlbumStrategy struct{}
 
 func NewFolderAlbumStrategy() *FolderAlbumStrategy {
 	return &FolderAlbumStrategy{}
@@ -31,8 +31,8 @@ func (s *FolderAlbumStrategy) GenerateAlbums(ctx context.Context, snaps []domain
 		albums = append(albums, domain.Album{
 			Name:     name,
 			SourceID: sourceId,
-			UID:	  sourceId + "/" + snap.Path,
-			Dir: 	  snap.Path,
+			UID:      sourceId + "/" + snap.Path,
+			Dir:      snap.Path,
 			Photos:   photos,
 		})
 	}

@@ -8,11 +8,9 @@ import (
 	"github.com/Aquila-f/photo-slider/internal/domain"
 )
 
-
 type LocalFSProvider struct {
 	baseDir string
 }
-
 
 func NewLocalFSProvider(baseDir string) *LocalFSProvider {
 	return &LocalFSProvider{baseDir: baseDir}

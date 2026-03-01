@@ -3,7 +3,7 @@ package domain
 import "context"
 
 type Source struct {
-	ID   string
+	ID       string
 	Provider StorageProvider
 }
 
@@ -35,7 +35,7 @@ type PhotoInfo struct {
 }
 
 type Album struct {
-	UID     string
+	UID      string
 	SourceID string
 	Name     string
 	Dir      string

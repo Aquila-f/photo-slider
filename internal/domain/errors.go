@@ -3,12 +3,12 @@ package domain
 import "fmt"
 
 type DomainError struct {
-	Code string
+	Code    string
 	Message string
 }
 
 func (e *DomainError) Error() string {
-    return fmt.Sprintf("[%s] %s", e.Code, e.Message)
+	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
 }
 
 var (

@@ -11,7 +11,7 @@ func NewSlashMapper() *SlashMapper {
 
 func (m *SlashMapper) Encode(name string) string {
 	return strings.ReplaceAll(name, "/", "_")
-	
+
 }
 
 func (m *SlashMapper) Decode(hash string) (string, error) {

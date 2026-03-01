@@ -13,12 +13,11 @@ type Cacher interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 }
 
-
 type FixedSizeMapCacher struct {
-	mu   sync.RWMutex
-	size int
-	head int
-	ring []string
+	mu    sync.RWMutex
+	size  int
+	head  int
+	ring  []string
 	store map[string][]byte
 }
 
@@ -61,4 +60,3 @@ func (c *FixedSizeMapCacher) Get(_ context.Context, key string) ([]byte, error) 
 	}
 	return data, nil
 }
-	
