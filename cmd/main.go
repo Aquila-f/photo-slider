@@ -1,13 +1,12 @@
 package main
 
 import (
-	_ "embed"
 	"context"
+	_ "embed"
 	"flag"
 	"log"
-	"os"
-	"path/filepath"
 
+	"github.com/Aquila-f/photo-slider/internal/config"
 	"github.com/Aquila-f/photo-slider/internal/domain"
 	"github.com/Aquila-f/photo-slider/internal/handler"
 	"github.com/Aquila-f/photo-slider/internal/photo"
@@ -20,21 +19,23 @@ import (
 var indexHTML string
 
 func main() {
-	dir := flag.String("dir", ".", "photo directory to serve")
 	port := flag.String("port", "8080", "server port")
+	cfgPath := flag.String("config", "config.yaml", "path to config file")
 	flag.Parse()
 
-	absDir, err := filepath.Abs(*dir)
-	if err != nil || !isDir(absDir) {
-		log.Fatalf("invalid directory: %s", *dir)
+	cfg, err := config.Load(*cfgPath)
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// TODO: allow users to select photo sources (e.g. local dir, remote) via config file
-	src := &domain.Source{
-		ID:       "local",
-		Provider: storage.NewLocalFSProvider(absDir),
+	sources := make(map[string]*domain.Source, len(cfg.Sources))
+	for _, dir := range cfg.Sources {
+		src := &domain.Source{
+			ID:       dir,
+			Provider: storage.NewLocalFSProvider(dir),
+		}
+		sources[src.ID] = src
 	}
-	sources := map[string]*domain.Source{src.ID: src}
 	albums := make(map[string]*domain.Album)
 
 	svc := service.NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), nil, 3)
@@ -45,14 +46,9 @@ func main() {
 	api := handler.NewAlbumAPI(svc, photo.NewImageCompressor(), photo.NewFixedSizeMapCacher(256))
 	router := handler.SetupRouter(indexHTML, api)
 
-	log.Printf("Serving photos from: %s", absDir)
+	log.Printf("Serving %d source(s)", len(cfg.Sources))
 	log.Printf("Open http://localhost:%s", *port)
 	if err := router.Run(":" + *port); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
-}
-
-func isDir(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
 }
