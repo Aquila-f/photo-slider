@@ -47,7 +47,10 @@ func main() {
 	api := handler.NewAlbumAPI(svc, photo.NewImageCompressor(), photo.NewFixedSizeMapCacher(256))
 	router := handler.SetupRouter(indexHTML, api)
 
-	log.Printf("Serving %d source(s)", len(cfg.Sources))
+	log.Printf("Serving %d source(s), %d album(s)", len(cfg.Sources), len(albums))
+	for _, a := range albums {
+		log.Printf("  album: %s (%d photos)", a.Name, len(a.Photos))
+	}
 	log.Printf("Open http://localhost:%s", *port)
 	if err := router.Run(":" + *port); err != nil {
 		log.Fatalf("server error: %v", err)
