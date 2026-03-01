@@ -154,8 +154,8 @@
         <template x-if="albums.length === 0">
           <option value="">No albums</option>
         </template>
-        <template x-for="album in albums" :key="album">
-          <option :value="album" x-text="album || '(root)'"></option>
+        <template x-for="album in albums" :key="album.Key">
+          <option :value="album.Key" x-text="album.Name || '(root)'"></option>
         </template>
       </select>
     </div>
@@ -208,7 +208,7 @@
           const res = await fetch('/api/albums')
           this.albums = await res.json() ?? []
           if (this.albums.length > 0) {
-            this.currentAlbum = this.albums[0]
+            this.currentAlbum = this.albums[0].Key
             await this.loadPhotos()
           }
         },

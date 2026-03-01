@@ -11,68 +11,45 @@ type AlbumService struct {
 	albumSources map[string]*domain.Source
 	albums       map[string]*domain.Album
 	strategy     domain.AlbumStrategy
-	mapper       domain.PathMapper
+	albumMapper  domain.Mapper
 	maxDepth     int
 }
 
-func NewAlbumService(sources map[string]*domain.Source, albums map[string]*domain.Album, strategy domain.AlbumStrategy, mapper domain.PathMapper, maxDepth int) *AlbumService {
-	return &AlbumService{albumSources: sources, albums: albums, strategy: strategy, mapper: mapper, maxDepth: maxDepth}
-}
-
-func (s *AlbumService) helper(ctx context.Context, dirPath string, src *domain.Source, depth int) error {
-	files, err := src.Provider.ListDir(ctx, dirPath)
-	if err != nil {
-		return err
-	}
-
-	album, err := s.strategy.GenerateAlbum(ctx, files, dirPath, src.ID)
-	if err != nil {
-		return err
-	}
-	if len(album.Photos) > 0 {
-		s.albums[album.Name] = &album
-	}
-
-	depth++
-	if depth > s.maxDepth {
-		return nil
-	}
-
-	for _, file := range files {
-		if file.IsDir {
-			var subPath string
-			if dirPath == "" {
-				subPath = file.Name
-			} else {
-				subPath = dirPath + "/" + file.Name
-			}
-			if err := s.helper(ctx, subPath, src, depth); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+func NewAlbumService(sources map[string]*domain.Source, albums map[string]*domain.Album, strategy domain.AlbumStrategy, mapper domain.Mapper, maxDepth int) *AlbumService {
+	return &AlbumService{albumSources: sources, albums: albums, strategy: strategy, albumMapper: mapper, maxDepth: maxDepth}
 }
 
 func (s *AlbumService) SyncAlbums(ctx context.Context) error {
 	for _, src := range s.albumSources {
-		if err := s.helper(ctx, "", src, 1); err != nil {
+		snaps, err := src.Provider.Walk(ctx, "", s.maxDepth)
+		if err != nil {
 			continue
+		}
+		albums, err := s.strategy.GenerateAlbums(ctx, snaps, src.ID)
+		if err != nil {
+			continue
+		}
+		for i := range albums {
+			s.albums[albums[i].UID] = &albums[i]
 		}
 	}
 	return nil
 }
 
-func (s *AlbumService) ListAlbums(_ context.Context) []string {
-	names := make([]string, 0, len(s.albums))
-	for name := range s.albums {
-		names = append(names, name)
+func (s *AlbumService) ListAlbums(_ context.Context) []domain.AlbumItem {
+	items := make([]domain.AlbumItem, 0, len(s.albums))
+	for path, album := range s.albums {
+		items = append(items, domain.AlbumItem{Name: album.Name, Key: s.albumMapper.Encode(path)})
 	}
-	return names
+	return items
 }
 
-func (s *AlbumService) ListPhoto(ctx context.Context, albumName string) ([]string, error) {
-	album, ok := s.albums[albumName]
+func (s *AlbumService) ListPhoto(ctx context.Context, albumKey string) ([]string, error) {
+	albumUID, err := s.albumMapper.Decode(albumKey)
+	if err != nil {
+		return nil, domain.ErrAlbumNotFound
+	}
+	album, ok := s.albums[albumUID]
 	if !ok {
 		return nil, domain.ErrAlbumNotFound
 	}
@@ -84,8 +61,12 @@ func (s *AlbumService) ListPhoto(ctx context.Context, albumName string) ([]strin
 	return tokens, nil
 }
 
-func (s *AlbumService) ReadPhoto(ctx context.Context, albumName, photoToken string) ([]byte, error) {
-	album, ok := s.albums[albumName]
+func (s *AlbumService) ReadPhoto(ctx context.Context, albumKey, photoToken string) ([]byte, error) {
+	albumUID, err := s.albumMapper.Decode(albumKey)
+	if err != nil {
+		return nil, domain.ErrAlbumNotFound
+	}
+	album, ok := s.albums[albumUID]
 	if !ok {
 		return nil, domain.ErrAlbumNotFound
 	}
@@ -94,5 +75,5 @@ func (s *AlbumService) ReadPhoto(ctx context.Context, albumName, photoToken stri
 		return nil, domain.ErrSourceNotFound
 	}
 
-	return src.Provider.ReadFile(ctx, path.Join(albumName, photoToken))
+	return src.Provider.ReadFile(ctx, path.Join(album.Dir, photoToken))
 }

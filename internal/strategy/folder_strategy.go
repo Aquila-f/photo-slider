@@ -12,20 +12,29 @@ func NewFolderAlbumStrategy() *FolderAlbumStrategy {
 	return &FolderAlbumStrategy{}
 }
 
-func (s *FolderAlbumStrategy) GenerateAlbum(ctx context.Context, files []domain.FileInfo, name, sourceId string) (domain.Album, error) {
-	var Photos []domain.PhotoInfo
-	for _, f := range files {
-		if !f.IsDir && domain.IsImage(f.Name) {
-			Photos = append(Photos, domain.PhotoInfo{AlbumName: name, FilePath: f.Name})
+func (s *FolderAlbumStrategy) GenerateAlbums(ctx context.Context, snaps []domain.DirSnapshot, sourceId string) ([]domain.Album, error) {
+	var albums []domain.Album
+	for _, snap := range snaps {
+		name := snap.Path
+		if name == "" {
+			name = "default"
 		}
+		var photos []domain.PhotoInfo
+		for _, f := range snap.Files {
+			if !f.IsDir && domain.IsImage(f.Name) {
+				photos = append(photos, domain.PhotoInfo{AlbumName: name, FilePath: f.Name})
+			}
+		}
+		if len(photos) == 0 {
+			continue
+		}
+		albums = append(albums, domain.Album{
+			Name:     name,
+			SourceID: sourceId,
+			UID:	  sourceId + "/" + snap.Path,
+			Dir: 	  snap.Path,
+			Photos:   photos,
+		})
 	}
-	if len(Photos) == 0 {
-		return domain.Album{}, nil
-	}
-
-	return domain.Album{
-		Name:     name,
-		SourceID: sourceId,
-		Photos:   Photos,
-	}, nil
+	return albums, nil
 }

@@ -5,14 +5,15 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Aquila-f/photo-slider/internal/domain"
 	"github.com/Aquila-f/photo-slider/internal/photo"
 	"github.com/gin-gonic/gin"
 )
 
 type albumService interface {
-	ListAlbums(ctx context.Context) []string
-	ListPhoto(ctx context.Context, albumName string) ([]string, error)
-	ReadPhoto(ctx context.Context, albumName, photoToken string) ([]byte, error)
+	ListAlbums(ctx context.Context) []domain.AlbumItem
+	ListPhoto(ctx context.Context, albumKey string) ([]string, error)
+	ReadPhoto(ctx context.Context, albumKey, photoToken string) ([]byte, error)
 }
 
 type AlbumAPI struct {
@@ -31,8 +32,8 @@ func (h *AlbumAPI) listAlbums(c *gin.Context) {
 }
 
 func (h *AlbumAPI) listPhotos(c *gin.Context) {
-	albumName := c.Param("album")
-	photos, err := h.svc.ListPhoto(c.Request.Context(), albumName)
+	albumKey := c.Param("album")
+	photos, err := h.svc.ListPhoto(c.Request.Context(), albumKey)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -41,7 +42,7 @@ func (h *AlbumAPI) listPhotos(c *gin.Context) {
 }
 
 func (h *AlbumAPI) readPhoto(c *gin.Context) {
-	albumName := c.Param("album")
+	albumKey := c.Param("album")
 	token := c.Param("key")
 	ctx := c.Request.Context()
 
@@ -51,7 +52,7 @@ func (h *AlbumAPI) readPhoto(c *gin.Context) {
 		return
 	}
 
-	data, err := h.svc.ReadPhoto(ctx, albumName, token)
+	data, err := h.svc.ReadPhoto(ctx, albumKey, token)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "photo not found"})
 		return

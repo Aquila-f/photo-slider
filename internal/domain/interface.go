@@ -8,33 +8,45 @@ type Source struct {
 }
 
 type FileInfo struct {
-	Name string
-	Path string
+	Name  string
+	Path  string
 	IsDir bool
+}
+
+type DirSnapshot struct {
+	Path  string
+	Files []FileInfo
 }
 
 type StorageProvider interface {
 	ListDir(ctx context.Context, path string) ([]FileInfo, error)
+	Walk(ctx context.Context, root string, maxDepth int) ([]DirSnapshot, error)
 	ReadFile(ctx context.Context, filePath string) ([]byte, error)
+}
+
+type AlbumItem struct {
+	Name string
+	Key  string
 }
 
 type PhotoInfo struct {
 	AlbumName string
-	FilePath     string
+	FilePath  string
 }
 
 type Album struct {
+	UID     string
 	SourceID string
 	Name     string
-	Path     string
+	Dir      string
 	Photos   []PhotoInfo
 }
 
 type AlbumStrategy interface {
-	GenerateAlbum(ctx context.Context, files []FileInfo, name, sourceId string) (Album, error)
+	GenerateAlbums(ctx context.Context, snaps []DirSnapshot, sourceId string) ([]Album, error)
 }
 
-type PathMapper interface {
-	Encode(path string) string
+type Mapper interface {
+	Encode(name string) string
 	Decode(hash string) (string, error)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/Aquila-f/photo-slider/internal/config"
 	"github.com/Aquila-f/photo-slider/internal/domain"
 	"github.com/Aquila-f/photo-slider/internal/handler"
+	"github.com/Aquila-f/photo-slider/internal/mapper"
 	"github.com/Aquila-f/photo-slider/internal/photo"
 	"github.com/Aquila-f/photo-slider/internal/service"
 	"github.com/Aquila-f/photo-slider/internal/storage"
@@ -38,7 +39,7 @@ func main() {
 	}
 	albums := make(map[string]*domain.Album)
 
-	svc := service.NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), nil, 3)
+	svc := service.NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), mapper.NewSlashMapper(), 3)
 	if err := svc.SyncAlbums(context.Background()); err != nil {
 		log.Fatalf("failed to sync albums: %v", err)
 	}
