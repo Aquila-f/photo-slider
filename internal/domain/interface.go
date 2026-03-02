@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Source struct {
 	ID       string
@@ -49,4 +52,25 @@ type AlbumStrategy interface {
 type Mapper interface {
 	Encode(name string) string
 	Decode(hash string) (string, error)
+}
+
+
+type PhotoMeta struct {
+	TakenAt *time.Time
+	Model   string
+}
+
+func (m *PhotoMeta) Headers() map[string]string {
+	h := make(map[string]string)
+	if m.TakenAt != nil {
+		h["X-Photo-Taken-At"] = m.TakenAt.Format(time.RFC3339)
+	}
+	if m.Model != "" {
+		h["X-Photo-Model"] = m.Model
+	}
+	return h
+}
+
+type MetaExtractor interface {
+	Extract(ctx context.Context, data []byte) (*PhotoMeta, error)
 }

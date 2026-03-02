@@ -6,6 +6,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.11.0
 	github.com/goccy/go-yaml v1.18.0
+	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 )
 
 require (
