@@ -43,7 +43,7 @@ func main() {
 	albums := make(map[string]*domain.Album)
 
 	// Initialize the album service and sync albums from all sources.
-	svc := service.NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), mapper.NewSlashMapper(), 3)
+	svc := service.NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), mapper.NewBase64Mapper(), 3)
 	if err := svc.SyncAlbums(context.Background()); err != nil {
 		log.Fatalf("failed to sync albums: %v", err)
 	}

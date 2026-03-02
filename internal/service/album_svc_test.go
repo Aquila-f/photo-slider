@@ -44,7 +44,7 @@ func newTestService(provider domain.StorageProvider, sourceID string) (*AlbumSer
 		sources,
 		albums,
 		strategy.NewFolderAlbumStrategy(),
-		mapper.NewSlashMapper(),
+		mapper.NewBase64Mapper(),
 		3,
 	)
 	return svc, sources, albums
@@ -100,7 +100,7 @@ func TestAlbumService_SyncAlbums_MultipleSourcesIndependent(t *testing.T) {
 		"srcC": {ID: "srcC", Provider: &mockProvider{walkResult: []domain.DirSnapshot{snap("c", "2.jpg")}}},
 	}
 	albums := map[string]*domain.Album{}
-	svc := NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), mapper.NewSlashMapper(), 3)
+	svc := NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), mapper.NewBase64Mapper(), 3)
 
 	if err := svc.SyncAlbums(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
