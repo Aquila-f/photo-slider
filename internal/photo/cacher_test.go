@@ -19,39 +19,39 @@ func TestFixedSizeMapCacher_GetMiss(t *testing.T) {
 
 func TestFixedSizeMapCacher_SetAndGet(t *testing.T) {
 	c := NewFixedSizeMapCacher(2)
-	data := []byte("hello")
+	photo := CachedPhoto{Data: []byte("hello")}
 
-	if err := c.Set(ctx, "a", data); err != nil {
+	if err := c.Set(ctx, "a", photo); err != nil {
 		t.Fatalf("Set() error = %v", err)
 	}
 	got, err := c.Get(ctx, "a")
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if string(got) != string(data) {
-		t.Errorf("Get() = %q, want %q", got, data)
+	if string(got.Data) != string(photo.Data) {
+		t.Errorf("Get().Data = %q, want %q", got.Data, photo.Data)
 	}
 }
 
 func TestFixedSizeMapCacher_UpdateExisting(t *testing.T) {
 	c := NewFixedSizeMapCacher(2)
-	_ = c.Set(ctx, "a", []byte("old"))
-	_ = c.Set(ctx, "a", []byte("new"))
+	_ = c.Set(ctx, "a", CachedPhoto{Data: []byte("old")})
+	_ = c.Set(ctx, "a", CachedPhoto{Data: []byte("new")})
 
 	got, err := c.Get(ctx, "a")
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if string(got) != "new" {
-		t.Errorf("Get() = %q, want %q", got, "new")
+	if string(got.Data) != "new" {
+		t.Errorf("Get().Data = %q, want %q", got.Data, "new")
 	}
 }
 
 func TestFixedSizeMapCacher_Eviction(t *testing.T) {
 	c := NewFixedSizeMapCacher(2)
-	_ = c.Set(ctx, "a", []byte("a"))
-	_ = c.Set(ctx, "b", []byte("b"))
-	_ = c.Set(ctx, "c", []byte("c"))
+	_ = c.Set(ctx, "a", CachedPhoto{Data: []byte("a")})
+	_ = c.Set(ctx, "b", CachedPhoto{Data: []byte("b")})
+	_ = c.Set(ctx, "c", CachedPhoto{Data: []byte("c")})
 
 	if _, err := c.Get(ctx, "a"); !errors.Is(err, ErrCacheMiss) {
 		t.Error("Get(a) expected ErrCacheMiss after eviction")
@@ -81,12 +81,12 @@ func TestFixedSizeMapCacher_ConcurrentAccess(t *testing.T) {
 	c := NewFixedSizeMapCacher(10)
 	var wg sync.WaitGroup
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 			token := string(rune('a' + i%10))
-			_ = c.Set(ctx, token, []byte(token))
+			_ = c.Set(ctx, token, CachedPhoto{Data: []byte(token)})
 			_, _ = c.Get(ctx, token)
 		}(i)
 	}

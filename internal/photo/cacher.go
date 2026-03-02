@@ -4,13 +4,20 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/Aquila-f/photo-slider/internal/domain"
 )
 
 var ErrCacheMiss = errors.New("cache miss")
 
+type CachedPhoto struct {
+	Data []byte
+	Meta *domain.PhotoMeta
+}
+
 type Cacher interface {
-	Set(ctx context.Context, key string, data []byte) error
-	Get(ctx context.Context, key string) ([]byte, error)
+	Set(ctx context.Context, key string, photo CachedPhoto) error
+	Get(ctx context.Context, key string) (CachedPhoto, error)
 }
 
 type FixedSizeMapCacher struct {
@@ -18,7 +25,7 @@ type FixedSizeMapCacher struct {
 	size  int
 	head  int
 	ring  []string
-	store map[string][]byte
+	store map[string]CachedPhoto
 }
 
 func NewFixedSizeMapCacher(size int) *FixedSizeMapCacher {
@@ -28,16 +35,16 @@ func NewFixedSizeMapCacher(size int) *FixedSizeMapCacher {
 	return &FixedSizeMapCacher{
 		size:  size,
 		ring:  make([]string, size),
-		store: make(map[string][]byte, size),
+		store: make(map[string]CachedPhoto, size),
 	}
 }
 
-func (c *FixedSizeMapCacher) Set(_ context.Context, key string, data []byte) error {
+func (c *FixedSizeMapCacher) Set(_ context.Context, key string, photo CachedPhoto) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if _, ok := c.store[key]; ok {
-		c.store[key] = data
+		c.store[key] = photo
 		return nil
 	}
 
@@ -45,18 +52,18 @@ func (c *FixedSizeMapCacher) Set(_ context.Context, key string, data []byte) err
 		delete(c.store, old)
 	}
 	c.ring[c.head] = key
-	c.store[key] = data
+	c.store[key] = photo
 	c.head = (c.head + 1) % c.size
 	return nil
 }
 
-func (c *FixedSizeMapCacher) Get(_ context.Context, key string) ([]byte, error) {
+func (c *FixedSizeMapCacher) Get(_ context.Context, key string) (CachedPhoto, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	data, ok := c.store[key]
+	photo, ok := c.store[key]
 	if !ok {
-		return nil, ErrCacheMiss
+		return CachedPhoto{}, ErrCacheMiss
 	}
-	return data, nil
+	return photo, nil
 }

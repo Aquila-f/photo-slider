@@ -20,10 +20,11 @@ type AlbumAPI struct {
 	svc        albumService
 	compressor photo.Compressor
 	cacher     photo.Cacher
+	extractor  domain.MetaExtractor
 }
 
-func NewAlbumAPI(svc albumService, compressor photo.Compressor, cacher photo.Cacher) *AlbumAPI {
-	return &AlbumAPI{svc: svc, compressor: compressor, cacher: cacher}
+func NewAlbumAPI(svc albumService, compressor photo.Compressor, cacher photo.Cacher, extractor domain.MetaExtractor) *AlbumAPI {
+	return &AlbumAPI{svc: svc, compressor: compressor, cacher: cacher, extractor: extractor}
 }
 
 func (h *AlbumAPI) listAlbums(c *gin.Context) {
@@ -46,22 +47,39 @@ func (h *AlbumAPI) readPhoto(c *gin.Context) {
 	token := c.Param("key")
 	ctx := c.Request.Context()
 
-	if data, err := h.cacher.Get(ctx, token); err == nil {
-		log.Printf("cache hit: %s", token)
-		c.Data(http.StatusOK, http.DetectContentType(data), data)
+	cacheKey := albumKey + "/" + token
+	if cached, err := h.cacher.Get(ctx, cacheKey); err == nil {
+		log.Printf("cache hit: %s", cacheKey)
+		setMetaHeaders(c, cached.Meta)
+		c.Data(http.StatusOK, http.DetectContentType(cached.Data), cached.Data)
 		return
 	}
 
-	data, err := h.svc.ReadPhoto(ctx, albumKey, token)
+	raw, err := h.svc.ReadPhoto(ctx, albumKey, token)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "photo not found"})
 		return
 	}
-	data, err = h.compressor.Compress(ctx, data)
+
+	// meta is best-effort; failure just means no EXIF headers in the response.
+	meta, _ := h.extractor.Extract(ctx, raw)
+
+	data, err := h.compressor.Compress(ctx, raw)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	_ = h.cacher.Set(ctx, token, data)
+	_ = h.cacher.Set(ctx, cacheKey, photo.CachedPhoto{Data: data, Meta: meta})
+
+	setMetaHeaders(c, meta)
 	c.Data(http.StatusOK, http.DetectContentType(data), data)
+}
+
+func setMetaHeaders(c *gin.Context, meta *domain.PhotoMeta) {
+	if meta == nil {
+		return
+	}
+	for k, v := range meta.Headers() {
+		c.Header(k, v)
+	}
 }
