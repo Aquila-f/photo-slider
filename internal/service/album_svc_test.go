@@ -129,9 +129,9 @@ func TestAlbumService_ListAlbums_ReturnsEncodedKey(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("expected 1 item")
 	}
-	// UID = "src1/a/b"  →  SlashMapper.Encode  →  "src1_a_b"
-	if items[0].Key != "src1_a_b" {
-		t.Errorf("Key = %q, want %q", items[0].Key, "src1_a_b")
+	// UID = "src1/a/b"  →  Base64Mapper.Encode  →  "c3JjMS9hL2I="
+	if items[0].Key != "c3JjMS9hL2I=" {
+		t.Errorf("Key = %q, want %q", items[0].Key, "c3JjMS9hL2I=")
 	}
 }
 
@@ -166,8 +166,8 @@ func TestAlbumService_ListPhoto_ReturnsTokens(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// UID = "src1/gallery" → encoded key = "src1_gallery"
-	tokens, err := svc.ListPhoto(context.Background(), "src1_gallery")
+	// UID = "src1/gallery" → Base64 encoded key
+	tokens, err := svc.ListPhoto(context.Background(), "c3JjMS9nYWxsZXJ5")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -205,8 +205,8 @@ func TestAlbumService_ReadPhoto_ReturnsFileBytes(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// key = "src1_trips", token = "sunset.jpg"
-	data, err := svc.ReadPhoto(context.Background(), "src1_trips", "sunset.jpg")
+	// key = base64("src1/trips"), token = "sunset.jpg"
+	data, err := svc.ReadPhoto(context.Background(), "c3JjMS90cmlwcw==", "sunset.jpg")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestAlbumService_ReadPhoto_JoinsAlbumDirWithToken(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if _, err := svc.ReadPhoto(context.Background(), "src1_2024_summer", "beach.jpg"); err != nil {
+	if _, err := svc.ReadPhoto(context.Background(), "c3JjMS8yMDI0L3N1bW1lcg==", "beach.jpg"); err != nil {
 		t.Errorf("unexpected error (wrong path?): %v", err)
 	}
 }
@@ -254,14 +254,14 @@ func TestAlbumService_ReadPhoto_SourceNotFound(t *testing.T) {
 	svc, _, albums := newTestService(provider, "src1")
 
 	// Inject an album that references a source not in albumSources.
-	// UID = "ghost/album" → encoded key = "ghost_album"
+	// UID = "ghost/album" → Base64 encoded key = "Z2hvc3QvYWxidW0="
 	albums["ghost/album"] = &domain.Album{
 		UID:      "ghost/album",
 		SourceID: "missing_src",
 		Dir:      "some/dir",
 	}
 
-	_, err := svc.ReadPhoto(context.Background(), "ghost_album", "photo.jpg")
+	_, err := svc.ReadPhoto(context.Background(), "Z2hvc3QvYWxidW0=", "photo.jpg")
 	if err != domain.ErrSourceNotFound {
 		t.Errorf("expected ErrSourceNotFound, got: %v", err)
 	}
