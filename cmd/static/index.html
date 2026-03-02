@@ -80,6 +80,12 @@
       white-space: nowrap;
     }
 
+    .meta {
+      margin-top: 0.3rem;
+      font-size: 0.75rem;
+      color: #555;
+    }
+
     .controls {
       display: flex;
       align-items: center;
@@ -143,6 +149,13 @@
     .dot.active { background: #0a84ff; }
 
     .empty { color: #555; font-size: 1.1rem; }
+
+    .error {
+      color: #ff453a;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      min-height: 1.2em;
+    }
   </style>
 </head>
 <body>
@@ -165,11 +178,14 @@
         <p class="empty">No images found.</p>
       </template>
       <template x-if="photos.length > 0">
-        <img :src="photoUrl(photos[current])" :alt="photos[current]">
+        <img :src="imageSrc" :alt="photos[current]">
       </template>
     </div>
 
     <p class="filename" x-text="photos[current] ?? ''"></p>
+    <p class="meta" x-show="meta.takenAt || meta.model"
+       x-text="[meta.model, meta.takenAt].filter(Boolean).join(' · ')"></p>
+    <p class="error" x-show="error" x-text="error"></p>
 
     <div class="controls">
       <button @click="prev()" :disabled="photos.length === 0">&#8249;</button>
@@ -181,13 +197,13 @@
 
     <div class="interval-row">
       <span>interval:</span>
-      <input type="range" min="1" max="30" x-model.number="interval" @change="restartIfPlaying()">
+      <input type="range" min="1" max="30" x-model.number="interval" @input="restartIfPlaying()">
       <span x-text="interval + 's'"></span>
     </div>
 
     <div class="dots">
       <template x-for="(photo, i) in photos" :key="i">
-        <div class="dot" :class="{ active: i === current }" @click="current = i"></div>
+        <div class="dot" :class="{ active: i === current }" @click="goTo(i)"></div>
       </template>
     </div>
 
@@ -202,15 +218,24 @@
         current: 0,
         playing: false,
         interval: 3,
+        meta: { takenAt: '', model: '' },
+        imageSrc: '',
+        error: '',
         _timer: null,
+        _abortCtrl: null,
+        _preloadCache: new Map(),
 
         async init() {
-          const res = await fetch('/api/albums')
-          this.albums = await res.json() ?? []
+          try {
+            const res = await fetch('/api/albums')
+            this.albums = await res.json() ?? []
+          } catch {
+            this.error = 'Failed to load albums.'
+            return
+          }
           if (this.albums.length > 0) {
             this.currentAlbum = this.albums[0].Key
             await this.loadPhotos()
-            if (this.photos.length > 0) this.togglePlay()
           }
         },
 
@@ -218,12 +243,68 @@
           clearInterval(this._timer)
           this.playing = false
           this.current = 0
-          const res = await fetch('/api/albums/' + encodeURIComponent(this.currentAlbum))
-          this.photos = await res.json() ?? []
+          this.error = ''
+          try {
+            const res = await fetch('/api/albums/' + encodeURIComponent(this.currentAlbum))
+            this.photos = await res.json() ?? []
+          } catch {
+            this.photos = []
+            this.error = 'Failed to load photos.'
+            return
+          }
+          this._revokePreloadCache()
+          if (this.photos.length > 0) await this.loadImage()
         },
 
         photoUrl(token) {
-          return '/photos/' + encodeURIComponent(this.currentAlbum) + '/' + token
+          return '/photos/' + encodeURIComponent(this.currentAlbum) + '/' + encodeURIComponent(token)
+        },
+
+        _fetchPhoto(url, signal) {
+          if (!this._preloadCache.has(url)) {
+            const promise = fetch(url, { signal }).then(async res => {
+              if (!res.ok) throw new Error('Network response was not ok');
+              return {
+                blob: await res.blob(),
+                takenAt: res.headers.get('X-Photo-Taken-At'),
+                model: res.headers.get('X-Photo-Model') || ''
+              };
+            }).catch(err => {
+              this._preloadCache.delete(url);
+              throw err;
+            });
+            this._preloadCache.set(url, promise);
+          }
+          return this._preloadCache.get(url);
+        },
+
+        async loadImage() {
+          if (this.photos.length === 0) return
+
+          if (this._abortCtrl) this._abortCtrl.abort()
+          this._abortCtrl = new AbortController()
+          const signal = this._abortCtrl.signal
+          const target = this.current
+
+          try {
+            const url = this.photoUrl(this.photos[target])
+            
+            const data = await this._fetchPhoto(url, signal)
+
+            if (signal.aborted) return
+
+            this.error = ''
+            this.meta = {
+              takenAt: data.takenAt ? new Date(data.takenAt).toLocaleString() : '',
+              model: data.model || '',
+            }
+            if (this.imageSrc) URL.revokeObjectURL(this.imageSrc)
+            this.imageSrc = URL.createObjectURL(data.blob)
+          } catch (e) {
+            if (e.name === 'AbortError') return
+            this.meta = { takenAt: '', model: '' }
+            this.error = 'Failed to load image.'
+          }
         },
 
         preloadAdjacent(index) {
@@ -231,17 +312,35 @@
             (index + 1) % this.photos.length,
             (index - 1 + this.photos.length) % this.photos.length,
           ]
-          targets.forEach(i => { new Image().src = this.photoUrl(this.photos[i]) })
+          for (const i of targets) {
+            const url = this.photoUrl(this.photos[i])
+            this._fetchPhoto(url).catch(() => {})
+          }
+        },
+
+        _revokePreloadCache() {
+          this._preloadCache.clear()
         },
 
         next() {
           this.current = (this.current + 1) % this.photos.length
+          this.loadImage()
           this.preloadAdjacent(this.current)
+          this.restartIfPlaying()
         },
 
         prev() {
           this.current = (this.current - 1 + this.photos.length) % this.photos.length
+          this.loadImage()
           this.preloadAdjacent(this.current)
+          this.restartIfPlaying()
+        },
+
+        goTo(i) {
+          this.current = i
+          this.loadImage()
+          this.preloadAdjacent(i)
+          this.restartIfPlaying()
         },
 
         togglePlay() {
