@@ -14,8 +14,8 @@ func SetupRouter(indexHTML string, api *AlbumAPI) *gin.Engine {
 	})
 
 	r.GET("/api/albums", api.listAlbums)
-	r.GET("/api/albums/:album", api.listPhotos)
-	r.GET("/photos/:album/:key", api.readPhoto)
+	r.GET("/api/albums/:albumkey", api.listPhotos)
+	r.GET("/photos/:albumkey/:key", api.readPhoto)
 
 	return r
 }

@@ -32,7 +32,7 @@ func (h *AlbumAPI) listAlbums(c *gin.Context) {
 }
 
 func (h *AlbumAPI) listPhotos(c *gin.Context) {
-	albumKey := c.Param("album")
+	albumKey := c.Param("albumkey")
 	photos, err := h.svc.ListPhoto(c.Request.Context(), albumKey)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -42,7 +42,7 @@ func (h *AlbumAPI) listPhotos(c *gin.Context) {
 }
 
 func (h *AlbumAPI) readPhoto(c *gin.Context) {
-	albumKey := c.Param("album")
+	albumKey := c.Param("albumkey")
 	token := c.Param("key")
 	ctx := c.Request.Context()
 
