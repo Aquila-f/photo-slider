@@ -210,6 +210,7 @@
           if (this.albums.length > 0) {
             this.currentAlbum = this.albums[0].Key
             await this.loadPhotos()
+            if (this.photos.length > 0) this.togglePlay()
           }
         },
 
@@ -219,7 +220,6 @@
           this.current = 0
           const res = await fetch('/api/albums/' + encodeURIComponent(this.currentAlbum))
           this.photos = await res.json() ?? []
-          if (this.photos.length > 0) this.togglePlay()
         },
 
         photoUrl(token) {
