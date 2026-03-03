@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	_ "embed"
+	"embed"
 	"flag"
 	"log"
 
@@ -16,8 +16,8 @@ import (
 	"github.com/Aquila-f/photo-slider/internal/strategy"
 )
 
-//go:embed static/index.html
-var indexHTML string
+//go:embed static/*
+var staticFS embed.FS
 
 func main() {
 	// Parse CLI flags: server port and config file path.
@@ -50,7 +50,7 @@ func main() {
 
 	// Wire up the HTTP API and router with image compression and a 256-entry LRU cache.
 	api := handler.NewAlbumAPI(svc, photo.NewImageCompressor(), photo.NewFixedSizeMapCacher(256), photo.NewEXIFExtractor())
-	router := handler.SetupRouter(indexHTML, api)
+	router := handler.SetupRouter(staticFS, api)
 
 	// Log registered sources and albums before starting the server.
 	log.Printf("Serving %d source(s), %d album(s)", len(cfg.Sources), len(albums))
