@@ -21,9 +21,13 @@
           <option :value="album.Key" x-text="album.Name || '(root)'"></option>
         </template>
       </select>
+      <label class="shuffle-toggle">
+        <input type="checkbox" x-model="shuffle" @change="loadPhotos()">
+        Shuffle
+      </label>
     </div>
 
-    <div class="image-wrap">
+    <div class="image-wrap" @touchstart="handleTouchStart($event)" @touchend="handleTouchEnd($event)">
       <template x-if="photos.length === 0">
         <p class="empty">No images found.</p>
       </template>

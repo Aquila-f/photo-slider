@@ -4,6 +4,7 @@ function slideshow() {
     currentAlbum: '',
     photos: [],
     current: 0,
+    shuffle: false,
     playing: false,
     interval: 3,
     meta: { takenAt: '', model: '' },
@@ -12,6 +13,8 @@ function slideshow() {
     _timer: null,
     _abortCtrl: null,
     _preloadCache: new Map(),
+    _touchStartX: 0,
+    _touchStartY: 0,
 
     async init() {
       try {
@@ -33,7 +36,8 @@ function slideshow() {
       this.current = 0
       this.error = ''
       try {
-        const res = await fetch('/api/albums/' + encodeURIComponent(this.currentAlbum))
+        const url = '/api/albums/' + encodeURIComponent(this.currentAlbum) + (this.shuffle ? '?shuffle=true' : '')
+        const res = await fetch(url)
         this.photos = await res.json() ?? []
       } catch {
         this.photos = []
@@ -144,6 +148,20 @@ function slideshow() {
       if (!this.playing) return
       clearInterval(this._timer)
       this._timer = setInterval(() => this.next(), this.interval * 1000)
+    },
+
+    handleTouchStart(e) {
+      this._touchStartX = e.touches[0].clientX
+      this._touchStartY = e.touches[0].clientY
+    },
+
+    handleTouchEnd(e) {
+      if (!this.photos.length) return
+      const dx = e.changedTouches[0].clientX - this._touchStartX
+      const dy = e.changedTouches[0].clientY - this._touchStartY
+      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return
+      if (dx < 0) this.next()
+      else this.prev()
     },
 
     handleKey(e) {

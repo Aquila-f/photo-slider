@@ -45,12 +45,24 @@ body {
 
 .album-bar select:focus { outline: none; border-color: #0a84ff; }
 
+.shuffle-toggle {
+  font-size: 0.82rem;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.shuffle-toggle input { accent-color: #0a84ff; }
+
 .image-wrap {
   background: #1a1a1a;
   border-radius: 8px;
   overflow: hidden;
   min-height: 420px;
   display: flex;
+  touch-action: pan-y;
   align-items: center;
   justify-content: center;
 }
