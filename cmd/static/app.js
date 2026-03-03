@@ -145,5 +145,15 @@ function slideshow() {
       clearInterval(this._timer)
       this._timer = setInterval(() => this.next(), this.interval * 1000)
     },
+
+    handleKey(e) {
+      if (!this.photos.length) return
+      switch (e.key) {
+        case 'ArrowRight': this.next(); break
+        case 'ArrowLeft':  this.prev(); break
+        case ' ':          e.preventDefault(); this.togglePlay(); break
+        case 'Escape':     if (this.playing) this.togglePlay(); break
+      }
+    },
   }
 }

@@ -9,7 +9,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
-  <div class="slideshow" x-data="slideshow()" x-init="init()">
+  <div class="slideshow" x-data="slideshow()" x-init="init()" @keydown.window="handleKey($event)">
 
     <div class="album-bar">
       <span class="album-label">Album:</span>
