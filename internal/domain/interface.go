@@ -54,7 +54,6 @@ type Mapper interface {
 	Decode(hash string) (string, error)
 }
 
-
 type PhotoMeta struct {
 	TakenAt *time.Time
 	Model   string
