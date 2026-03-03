@@ -1,14 +1,32 @@
 # photo-slider
 
-A lightweight local photo viewer. Point it at one or more directories and browse photos by album in your browser.
+A lightweight, self-contained local photo viewer. Point it at one or more directories and browse photos by album in your browser.
 
 ## Features
 
-- Scan multiple local source directories for image files
+- Scan multiple local source directories for image files (JPEG, PNG, WebP, GIF)
 - Organise photos into albums by folder structure
-- Browse albums and photos via a slider-style Web UI
-- REST API to list albums, list photos, and serve images
-- On-the-fly image compression with a fixed-size in-memory cache (ring-buffer, 256 entries)
+- Browser-based slideshow UI with album switching
+- On-the-fly image compression (max 1920px, JPEG quality 80) with fixed-size in-memory ring-buffer cache (256 entries)
+- EXIF metadata extraction (camera model, date taken)
+- Keyboard, mouse, and touch/swipe navigation
+- Fullscreen mode
+- Shuffle and auto-play with configurable interval
+- REST API for programmatic access
+
+## Quick Start
+
+```bash
+go build -o photo-slider ./cmd
+./photo-slider -config config.yaml -port 8080
+```
+
+Open http://localhost:8080
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-config` | `config.yaml` | Path to config file |
+| `-port` | `8080` | Server port |
 
 ## Configuration
 
@@ -22,41 +40,46 @@ sources:
 
 Each entry must be an existing directory. Relative paths are resolved to absolute paths at startup.
 
-## Usage
+## UI Controls
 
-```bash
-go build -o photo-slider ./cmd
-./photo-slider -config config.yaml -port 8080
-```
+### Keyboard Shortcuts
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-config` | `config.yaml` | Path to config file |
-| `-port` | `8080` | Server port |
+| Key | Action |
+|-----|--------|
+| `←` / `→` | Previous / next photo |
+| `Space` | Toggle play/pause slideshow |
+| `f` | Toggle fullscreen |
+| `Escape` | Exit fullscreen or stop playback |
 
-Open http://localhost:8080
+### Touch
+
+Swipe left/right to navigate between photos.
+
+### Slideshow
+
+Click play to auto-advance photos. Use the interval slider (1–30 seconds) to control speed. Enable shuffle to randomise photo order.
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/albums` | List all albums |
-| GET | `/api/albums/:album` | List photo keys in an album |
-| GET | `/photos/:album/:key` | Serve a single photo (compressed) |
+| GET | `/api/albums/:album` | List photo keys in an album (`?shuffle=true` to randomise) |
+| GET | `/photos/:album/:key` | Serve a compressed photo |
 
-Album keys are slash-encoded identifiers derived from the source path and folder name. Photo keys are unique tokens per file.
+Album and photo keys are base64 URL-encoded identifiers. Photo responses include `X-Photo-Taken-At` and `X-Photo-Model` headers when EXIF data is available.
 
 ## Architecture
 
 ```
-cmd/              – entrypoint, wires dependencies
+cmd/              – entrypoint and static assets (HTML/JS/CSS)
 internal/
   config/         – YAML config loader
-  domain/         – core types and interfaces
+  domain/         – core types, interfaces, and error definitions
   handler/        – Gin HTTP handlers and router
-  mapper/         – slash-based key encoder/decoder
-  photo/          – image compressor and fixed-size ring-buffer cache
-  service/        – album sync and photo read logic
+  mapper/         – base64 key encoder/decoder
+  photo/          – image compressor, ring-buffer cache, EXIF extractor
+  service/        – album sync and photo retrieval
   storage/        – local filesystem provider
-  strategy/       – folder-based album generation strategy
+  strategy/       – album generation (folder-based) and photo list strategies
 ```
