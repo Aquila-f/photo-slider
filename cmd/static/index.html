@@ -9,7 +9,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
-  <div class="slideshow" x-data="slideshow()" x-init="init()" @keydown.window="handleKey($event)">
+  <div class="slideshow" :class="{ expanded }" x-data="slideshow()" x-init="init()" @keydown.window="handleKey($event)">
 
     <div class="album-bar">
       <span class="album-label">Album:</span>
@@ -34,6 +34,11 @@
       <template x-if="photos.length > 0">
         <img :src="imageSrc" :alt="photos[current]">
       </template>
+      <div class="expand-info" x-show="expanded">
+        <span x-text="photos.length ? (current + 1) + ' / ' + photos.length : ''"></span>
+        <span x-text="photos[current] ?? ''"></span>
+        <span x-text="[meta.model, meta.takenAt].filter(Boolean).join(' · ')"></span>
+      </div>
     </div>
 
     <p class="filename" x-text="photos[current] ?? ''"></p>
@@ -47,6 +52,8 @@
       <button @click="next()" :disabled="photos.length === 0">&#8250;</button>
       <button @click="togglePlay()" :class="{ playing }" :disabled="photos.length === 0"
         x-text="playing ? '⏸' : '▶'"></button>
+      <button @click="toggleExpand()" :class="{ expanded }"
+        x-text="expanded ? '⛶' : '⛶'">⛶</button>
     </div>
 
     <div class="interval-row">

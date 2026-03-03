@@ -15,6 +15,7 @@ function slideshow() {
     _preloadCache: new Map(),
     _touchStartX: 0,
     _touchStartY: 0,
+    expanded: false,
 
     async init() {
       try {
@@ -164,13 +165,18 @@ function slideshow() {
       else this.prev()
     },
 
+    toggleExpand() {
+      this.expanded = !this.expanded
+    },
+
     handleKey(e) {
       if (!this.photos.length) return
       switch (e.key) {
         case 'ArrowRight': this.next(); break
         case 'ArrowLeft':  this.prev(); break
         case ' ':          e.preventDefault(); this.togglePlay(); break
-        case 'Escape':     if (this.playing) this.togglePlay(); break
+        case 'Escape':     if (this.expanded) this.expanded = false; else if (this.playing) this.togglePlay(); break
+        case 'f':          this.toggleExpand(); break
       }
     },
   }
