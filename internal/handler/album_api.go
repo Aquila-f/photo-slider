@@ -17,14 +17,15 @@ type albumService interface {
 }
 
 type AlbumAPI struct {
-	svc        albumService
-	compressor photo.Compressor
-	cacher     photo.Cacher
-	extractor  domain.MetaExtractor
+	svc          albumService
+	compressor   photo.Compressor
+	cacher       photo.Cacher
+	extractor    domain.MetaExtractor
+	listStrategy domain.PhotoListStrategy
 }
 
-func NewAlbumAPI(svc albumService, compressor photo.Compressor, cacher photo.Cacher, extractor domain.MetaExtractor) *AlbumAPI {
-	return &AlbumAPI{svc: svc, compressor: compressor, cacher: cacher, extractor: extractor}
+func NewAlbumAPI(svc albumService, compressor photo.Compressor, cacher photo.Cacher, extractor domain.MetaExtractor, listStrategy domain.PhotoListStrategy) *AlbumAPI {
+	return &AlbumAPI{svc: svc, compressor: compressor, cacher: cacher, extractor: extractor, listStrategy: listStrategy}
 }
 
 func (h *AlbumAPI) listAlbums(c *gin.Context) {
@@ -38,6 +39,9 @@ func (h *AlbumAPI) listPhotos(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
+	}
+	if c.Query("shuffle") == "true" {
+		photos, _ = h.listStrategy.Arrange(c.Request.Context(), photos)
 	}
 	c.JSON(http.StatusOK, photos)
 }

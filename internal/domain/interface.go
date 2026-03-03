@@ -49,6 +49,10 @@ type AlbumStrategy interface {
 	GenerateAlbums(ctx context.Context, snaps []DirSnapshot, sourceId string) ([]Album, error)
 }
 
+type PhotoListStrategy interface {
+	Arrange(ctx context.Context, tokens []string) ([]string, error)
+}
+
 type Mapper interface {
 	Encode(name string) string
 	Decode(hash string) (string, error)
