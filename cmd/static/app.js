@@ -16,6 +16,8 @@ function slideshow() {
     _touchStartX: 0,
     _touchStartY: 0,
     expanded: false,
+    _exitHintTimer: null,
+    showExitHint: false,
 
     async init() {
       try {
@@ -167,6 +169,14 @@ function slideshow() {
 
     toggleExpand() {
       this.expanded = !this.expanded
+      if (!this.expanded) this.showExitHint = false
+    },
+
+    handleImageWrapClick() {
+      if (!this.expanded) return
+      this.showExitHint = true
+      clearTimeout(this._exitHintTimer)
+      this._exitHintTimer = setTimeout(() => { this.showExitHint = false }, 1500)
     },
 
     handleKey(e) {

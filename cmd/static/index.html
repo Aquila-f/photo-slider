@@ -27,13 +27,14 @@
       </label>
     </div>
 
-    <div class="image-wrap" @touchstart="handleTouchStart($event)" @touchend="handleTouchEnd($event)">
+    <div class="image-wrap" @touchstart="handleTouchStart($event)" @touchend="handleTouchEnd($event)" @click="handleImageWrapClick()">
       <template x-if="photos.length === 0">
         <p class="empty">No images found.</p>
       </template>
       <template x-if="photos.length > 0">
         <img :src="imageSrc" :alt="photos[current]">
       </template>
+      <div class="exit-hint" x-show="showExitHint" x-transition.opacity.duration.300ms>Press <kbd>Esc</kbd> or <kbd>f</kbd> to exit fullscreen</div>
       <div class="expand-info" x-show="expanded">
         <span x-text="photos.length ? (current + 1) + ' / ' + photos.length : ''"></span>
         <span x-text="photos[current] ?? ''"></span>

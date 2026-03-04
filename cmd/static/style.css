@@ -119,10 +119,41 @@ button.expanded { background: #0a84ff; border-color: #0a84ff; }
   z-index: 100;
   border-radius: 0;
   min-height: auto;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .slideshow.expanded .image-wrap img {
   max-height: 100vh;
+}
+
+.exit-hint {
+  display: none;
+}
+
+.slideshow.expanded .exit-hint {
+  display: block;
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 0.8rem 1.4rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  pointer-events: none;
+  z-index: 101;
+}
+
+.exit-hint kbd {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  font-family: inherit;
+  font-size: 0.85rem;
 }
 
 .expand-info {
