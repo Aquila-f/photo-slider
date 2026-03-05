@@ -23,7 +23,7 @@ func SetupRouter(staticFS embed.FS, api *AlbumAPI, sourceAPI *SourceAPI) *gin.En
 
 	r.GET("/api/sources", sourceAPI.listSources)
 	r.POST("/api/sources", sourceAPI.createSource)
-	r.DELETE("/api/sources/:id", sourceAPI.deleteSource)
+	r.DELETE("/api/sources", sourceAPI.deleteSource)
 	r.GET("/api/albums", api.listAlbums)
 	r.GET("/api/albums/:albumkey", api.listPhotos)
 	r.GET("/photos/:albumkey/:key", api.readPhoto)

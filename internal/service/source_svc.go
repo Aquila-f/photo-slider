@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/Aquila-f/photo-slider/internal/domain"
 )
@@ -43,13 +45,23 @@ func (s *SourceService) AddSource(ctx context.Context, id string) error {
 	if _, exists := s.sources[id]; exists {
 		return nil
 	}
-	s.sources[id] = &domain.Source{
+	info, err := os.Stat(id)
+	if err != nil {
+		return fmt.Errorf("path not found: %s", id)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("path is not a directory: %s", id)
+	}
+	src := &domain.Source{
 		ID:       id,
 		Provider: s.providerFactory(id),
 	}
 	if s.registrar != nil {
-		return s.registrar.RegisterAlbumsForSource(ctx, s.sources[id])
+		if err := s.registrar.RegisterAlbumsForSource(ctx, src); err != nil {
+			return err
+		}
 	}
+	s.sources[id] = src
 	return nil
 }
 
