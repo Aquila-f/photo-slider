@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(staticFS embed.FS, api *AlbumAPI) *gin.Engine {
+func SetupRouter(staticFS embed.FS, api *AlbumAPI, sourceAPI *SourceAPI) *gin.Engine {
 	r := gin.Default()
 
 	// Serve index.html at root
@@ -21,6 +21,7 @@ func SetupRouter(staticFS embed.FS, api *AlbumAPI) *gin.Engine {
 	staticSub, _ := fs.Sub(staticFS, "static")
 	r.StaticFS("/static", http.FS(staticSub))
 
+	r.GET("/api/sources", sourceAPI.listSources)
 	r.GET("/api/albums", api.listAlbums)
 	r.GET("/api/albums/:albumkey", api.listPhotos)
 	r.GET("/photos/:albumkey/:key", api.readPhoto)

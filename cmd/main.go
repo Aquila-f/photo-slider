@@ -57,7 +57,8 @@ func main() {
 
 	// Wire up the HTTP API and router with image compression and a 256-entry LRU cache.
 	api := handler.NewAlbumAPI(svc, photo.NewImageCompressor(), photo.NewFixedSizeMapCacher(256), photo.NewEXIFExtractor(), strategy.NewRandomListStrategy())
-	router := handler.SetupRouter(staticFS, api)
+	sourceAPI := handler.NewSourceAPI(sourceSvc)
+	router := handler.SetupRouter(staticFS, api, sourceAPI)
 
 	// Log registered sources and albums before starting the server.
 	log.Printf("Serving %d source(s), %d album(s)", len(cfg.Sources), len(albums))
