@@ -1,36 +1,58 @@
-# photo-slider
+# Photo Slider
 
-A lightweight, self-contained local photo viewer. Point it at one or more directories and browse photos by album in your browser.
+[中文文档](README_zh.md)
+
+A lightweight, self-contained photo viewer. Point it at your local photo directories and browse slideshows in your browser — no database, no cloud, just a single binary.
+
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/Aquila-f/photo-slider" alt="Release">
+  <img src="https://img.shields.io/badge/Go-1.26-00ADD8?logo=go" alt="Go">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+</p>
 
 ## Features
 
-- Scan multiple local source directories for image files (JPEG, PNG, WebP, GIF)
-- Organise photos into albums by folder structure
-- Browser-based slideshow UI with album switching
-- On-the-fly image compression (max 1920px, JPEG quality 80) with fixed-size in-memory ring-buffer cache (256 entries)
-- EXIF metadata extraction (camera model, date taken)
+- Scan multiple directories for photos (JPEG, PNG, WebP, GIF)
+- Auto-organize into albums by folder structure
+- On-the-fly image compression (max 1920 px, JPEG quality 80) with in-memory LRU cache
+- EXIF metadata display (camera model, date taken)
 - Keyboard, mouse, and touch/swipe navigation
-- Fullscreen mode
-- Shuffle and auto-play with configurable interval
+- Fullscreen mode with overlay info
+- Shuffle and auto-play with adjustable interval (1–30 s)
+- Manage source directories from the UI
+- Single binary with embedded web assets — no external dependencies
 - REST API for programmatic access
 
 ## Quick Start
 
+### From source
+
 ```bash
 go build -o photo-slider ./cmd
-./photo-slider -config config.yaml -port 8080
+cp config.example.yaml config.yaml   # edit with your photo paths
+./photo-slider
 ```
 
-Open http://localhost:8080
+### From release
+
+Download a binary from the [Releases](https://github.com/Aquila-f/photo-slider/releases) page, edit `config.example.yaml`, and run:
+
+```bash
+./photo-slider -config config.yaml
+```
+
+Then open **http://localhost:8080**.
+
+### CLI Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-config` | `config.yaml` | Path to config file |
-| `-port` | `8080` | Server port |
+| `-config` | `config.yaml` | Path to configuration file |
+| `-port` | `8080` | HTTP server port |
 
 ## Configuration
 
-Create a `config.yaml` (see `config.example.yaml`):
+Create a `config.yaml` (see [config.example.yaml](config.example.yaml)):
 
 ```yaml
 sources:
@@ -38,48 +60,73 @@ sources:
   - /another/photo/directory
 ```
 
-Each entry must be an existing directory. Relative paths are resolved to absolute paths at startup.
+Each entry must be an existing, readable directory. Relative paths are resolved to absolute paths at startup.
 
-## UI Controls
+You can also add or remove sources at runtime through the web UI — click the **Sources** panel at the top of the page.
 
-### Keyboard Shortcuts
+## Controls
+
+### Keyboard
 
 | Key | Action |
 |-----|--------|
 | `←` / `→` | Previous / next photo |
-| `Space` | Toggle play/pause slideshow |
+| `Space` | Toggle auto-play |
 | `f` | Toggle fullscreen |
-| `Escape` | Exit fullscreen or stop playback |
+| `Esc` | Exit fullscreen or stop playback |
 
 ### Touch
 
-Swipe left/right to navigate between photos.
+Swipe left or right to navigate between photos.
 
 ### Slideshow
 
-Click play to auto-advance photos. Use the interval slider (1–30 seconds) to control speed. Enable shuffle to randomise photo order.
+Click ▶ to auto-advance. Adjust the interval slider (1–30 s) to control speed. Enable **Shuffle** to randomize photo order.
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/albums` | List all albums |
-| GET | `/api/albums/:album` | List photo keys in an album (`?shuffle=true` to randomise) |
-| GET | `/photos/:album/:key` | Serve a compressed photo |
+| `GET` | `/api/sources` | List configured source directories |
+| `POST` | `/api/sources` | Add a source directory |
+| `DELETE` | `/api/sources` | Remove a source directory |
+| `GET` | `/api/albums` | List all albums |
+| `GET` | `/api/albums/:key` | List photo keys in an album (`?shuffle=true`) |
+| `GET` | `/photos/:album/:key` | Serve a compressed photo |
 
-Album and photo keys are base64 URL-encoded identifiers. Photo responses include `X-Photo-Taken-At` and `X-Photo-Model` headers when EXIF data is available.
+Album and photo identifiers are Base64 URL-encoded. Photo responses include `X-Photo-Taken-At` (RFC 3339) and `X-Photo-Model` headers when EXIF data is available.
 
 ## Architecture
 
 ```
-cmd/              – entrypoint and static assets (HTML/JS/CSS)
+cmd/
+  main.go             Entry point, dependency wiring
+  static/             Embedded web UI (HTML, JS, CSS via Alpine.js)
+
 internal/
-  config/         – YAML config loader
-  domain/         – core types, interfaces, and error definitions
-  handler/        – Gin HTTP handlers and router
-  mapper/         – base64 key encoder/decoder
-  photo/          – image compressor, ring-buffer cache, EXIF extractor
-  service/        – album sync and photo retrieval
-  storage/        – local filesystem provider
-  strategy/       – album generation (folder-based) and photo list strategies
+  config/             YAML configuration loader
+  domain/             Core types, interfaces, error definitions
+  handler/            Gin HTTP handlers and router
+  mapper/             Base64 key encoder/decoder
+  photo/              Image compressor, ring-buffer LRU cache, EXIF extractor
+  service/            Business logic (album sync, source management)
+  storage/            Local filesystem provider
+  strategy/           Album generation and photo list strategies
 ```
+
+## Building
+
+```bash
+# Development
+go build -o photo-slider ./cmd
+
+# Run tests
+go test ./...
+
+# Cross-platform release (requires GoReleaser)
+goreleaser release --snapshot --clean
+```
+
+## License
+
+MIT
