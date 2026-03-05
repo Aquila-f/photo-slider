@@ -35,19 +35,23 @@ func (m *mockProvider) ReadFile(_ context.Context, filePath string) ([]byte, err
 
 // newTestService wires real strategy + mapper with a mock provider.
 // Returns the service plus the underlying maps so tests can inspect/inject state.
-func newTestService(provider domain.StorageProvider, sourceID string) (*AlbumService, map[string]*domain.Source, map[string]*domain.Album) {
+func newTestService(provider domain.StorageProvider, sourceID string) (*AlbumService, *SourceService, map[string]*domain.Album) {
 	sources := map[string]*domain.Source{
 		sourceID: {ID: sourceID, Provider: provider},
 	}
 	albums := map[string]*domain.Album{}
+	sourceSvc := NewSourceService(sources, func(id string) domain.StorageProvider {
+		return provider
+	})
 	svc := NewAlbumService(
-		sources,
+		sourceSvc,
 		albums,
 		strategy.NewFolderAlbumStrategy(),
 		mapper.NewBase64Mapper(),
 		3,
 	)
-	return svc, sources, albums
+	sourceSvc.SetRegistrar(svc)
+	return svc, sourceSvc, albums
 }
 
 // --- SyncAlbums ---
@@ -80,7 +84,7 @@ func TestAlbumService_SyncAlbums_WalkErrorContinues(t *testing.T) {
 	provider := &mockProvider{walkErr: errors.New("disk error")}
 	svc, _, _ := newTestService(provider, "src1")
 
-	// must not propagate the walk error
+	// SyncAlbums logs the error but does not propagate it
 	if err := svc.SyncAlbums(context.Background()); err != nil {
 		t.Fatalf("expected nil, got: %v", err)
 	}
@@ -100,7 +104,9 @@ func TestAlbumService_SyncAlbums_MultipleSourcesIndependent(t *testing.T) {
 		"srcC": {ID: "srcC", Provider: &mockProvider{walkResult: []domain.DirSnapshot{snap("c", "2.jpg")}}},
 	}
 	albums := map[string]*domain.Album{}
-	svc := NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), mapper.NewBase64Mapper(), 3)
+	sourceSvc := NewSourceService(sources, nil)
+	svc := NewAlbumService(sourceSvc, albums, strategy.NewFolderAlbumStrategy(), mapper.NewBase64Mapper(), 3)
+	sourceSvc.SetRegistrar(svc)
 
 	if err := svc.SyncAlbums(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -253,8 +259,7 @@ func TestAlbumService_ReadPhoto_SourceNotFound(t *testing.T) {
 	provider := &mockProvider{}
 	svc, _, albums := newTestService(provider, "src1")
 
-	// Inject an album that references a source not in albumSources.
-	// UID = "ghost/album" → Base64 encoded key = "Z2hvc3QvYWxidW0="
+	// Inject an album that references a source not in the source service.
 	albums["ghost/album"] = &domain.Album{
 		UID:      "ghost/album",
 		SourceID: "missing_src",

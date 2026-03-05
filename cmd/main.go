@@ -42,8 +42,15 @@ func main() {
 	}
 	albums := make(map[string]*domain.Album)
 
-	// Initialize the album service and sync albums from all sources.
-	svc := service.NewAlbumService(sources, albums, strategy.NewFolderAlbumStrategy(), mapper.NewBase64Mapper(), 3)
+	// Initialize source service with a provider factory for local filesystem.
+	sourceSvc := service.NewSourceService(sources, func(id string) domain.StorageProvider {
+		return storage.NewLocalFSProvider(id)
+	})
+
+	// Initialize the album service and wire up the registrar.
+	svc := service.NewAlbumService(sourceSvc, albums, strategy.NewFolderAlbumStrategy(), mapper.NewBase64Mapper(), 3)
+	sourceSvc.SetRegistrar(svc)
+
 	if err := svc.SyncAlbums(context.Background()); err != nil {
 		log.Fatalf("failed to sync albums: %v", err)
 	}

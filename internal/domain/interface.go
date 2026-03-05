@@ -58,6 +58,16 @@ type Mapper interface {
 	Decode(hash string) (string, error)
 }
 
+// ProviderFactory creates a StorageProvider for a given source ID.
+type ProviderFactory func(id string) StorageProvider
+
+// AlbumRegistrar is implemented by AlbumService to allow SourceService
+// to trigger album registration/removal without a circular dependency.
+type AlbumRegistrar interface {
+	RegisterAlbumsForSource(ctx context.Context, src *Source) error
+	RemoveAlbumsBySource(sourceID string)
+}
+
 type PhotoMeta struct {
 	TakenAt *time.Time
 	Model   string
