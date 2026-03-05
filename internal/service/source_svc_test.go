@@ -43,17 +43,19 @@ func TestSourceService_ListSources(t *testing.T) {
 }
 
 func TestSourceService_AddSource_RegistersAlbums(t *testing.T) {
+	dir := t.TempDir()
+
 	providers := map[string]*mockProvider{}
 	sourceSvc, albumSvc, _ := newTestSourceService(providers)
 
-	// Add a new source that the factory will create a provider for
-	providers["new_src"] = &mockProvider{
+	// Add a new source using a real temp directory
+	providers[dir] = &mockProvider{
 		walkResult: []domain.DirSnapshot{
 			{Path: "photos", Files: []domain.FileInfo{{Name: "img.jpg"}}},
 		},
 	}
 
-	if err := sourceSvc.AddSource(context.Background(), "new_src"); err != nil {
+	if err := sourceSvc.AddSource(context.Background(), dir); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -67,6 +69,21 @@ func TestSourceService_AddSource_RegistersAlbums(t *testing.T) {
 	items := albumSvc.ListAlbums(context.Background())
 	if len(items) != 1 {
 		t.Errorf("expected 1 album after AddSource, got %d", len(items))
+	}
+}
+
+func TestSourceService_AddSource_NonExistentPath(t *testing.T) {
+	sourceSvc, _, _ := newTestSourceService(map[string]*mockProvider{})
+
+	err := sourceSvc.AddSource(context.Background(), "/nonexistent/path")
+	if err == nil {
+		t.Fatal("expected error for non-existent path, got nil")
+	}
+
+	// Verify source was NOT added
+	ids, _ := sourceSvc.ListSources(context.Background())
+	if len(ids) != 0 {
+		t.Errorf("expected 0 sources, got %d", len(ids))
 	}
 }
 
