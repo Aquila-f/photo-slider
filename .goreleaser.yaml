@@ -1,0 +1,36 @@
+version: 2
+
+builds:
+  - main: ./cmd/main.go
+    binary: photo-slider
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - config.example.yaml
+      - README.md
+
+release:
+  github:
+    owner: Aquila-f
+    name: photo-slider
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
