@@ -18,8 +18,13 @@ function slideshow() {
     expanded: false,
     _exitHintTimer: null,
     showExitHint: false,
+    sources: [],
+    newSourcePath: '',
+    sourceError: '',
+    showSources: false,
 
     async init() {
+      await this.loadSources()
       try {
         const res = await fetch('/api/albums')
         this.albums = await res.json() ?? []
@@ -30,6 +35,72 @@ function slideshow() {
       if (this.albums.length > 0) {
         this.currentAlbum = this.albums[0].Key
         await this.loadPhotos()
+      }
+    },
+
+    async loadSources() {
+      try {
+        const res = await fetch('/api/sources')
+        this.sources = await res.json() ?? []
+      } catch {
+        this.sources = []
+      }
+    },
+
+    async addSource() {
+      const path = this.newSourcePath.trim()
+      if (!path) return
+      this.sourceError = ''
+      try {
+        const res = await fetch('/api/sources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: path }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          this.sourceError = data?.error || 'Failed to add source.'
+          return
+        }
+        this.newSourcePath = ''
+        await this.loadSources()
+        await this.reloadAlbums()
+      } catch {
+        this.sourceError = 'Failed to add source.'
+      }
+    },
+
+    async deleteSource(id) {
+      this.sourceError = ''
+      try {
+        await fetch('/api/sources', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+        await this.loadSources()
+        await this.reloadAlbums()
+      } catch {
+        this.sourceError = 'Failed to delete source.'
+      }
+    },
+
+    async reloadAlbums() {
+      try {
+        const res = await fetch('/api/albums')
+        this.albums = await res.json() ?? []
+      } catch {
+        this.albums = []
+      }
+      if (this.albums.length > 0) {
+        if (!this.albums.find(a => a.Key === this.currentAlbum)) {
+          this.currentAlbum = this.albums[0].Key
+        }
+        await this.loadPhotos()
+      } else {
+        this.currentAlbum = ''
+        this.photos = []
+        this.imageSrc = ''
       }
     },
 

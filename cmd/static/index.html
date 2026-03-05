@@ -11,6 +11,28 @@
 <body>
   <div class="slideshow" :class="{ expanded }" x-data="slideshow()" x-init="init()" @keydown.window="handleKey($event)">
 
+    <div class="source-section">
+      <button class="source-toggle" @click="showSources = !showSources"
+        x-text="(showSources ? '▾' : '▸') + ' Sources (' + sources.length + ')'"></button>
+      <div class="source-panel" x-show="showSources" x-transition.duration.200ms>
+        <div class="source-list">
+          <template x-for="src in sources" :key="src">
+            <div class="source-item">
+              <span class="source-path" x-text="src"></span>
+              <button class="source-delete" @click="deleteSource(src)">&times;</button>
+            </div>
+          </template>
+          <p class="empty" x-show="sources.length === 0">No sources configured.</p>
+        </div>
+        <div class="source-add">
+          <input type="text" x-model="newSourcePath" placeholder="Paste directory path..."
+            @keydown.enter="addSource()">
+          <button @click="addSource()">Add</button>
+        </div>
+        <p class="error" x-show="sourceError" x-text="sourceError"></p>
+      </div>
+    </div>
+
     <div class="album-bar">
       <span class="album-label">Album:</span>
       <select x-model="currentAlbum" @change="loadPhotos()" :disabled="albums.length === 0">

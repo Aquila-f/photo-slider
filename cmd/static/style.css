@@ -18,6 +18,86 @@ body {
   text-align: center;
 }
 
+.source-section {
+  margin-bottom: 1rem;
+}
+
+.source-toggle {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0.3rem 0;
+}
+.source-toggle:hover { color: #ccc; }
+
+.source-panel {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+.source-list {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.source-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+}
+.source-item:hover { background: #252525; }
+
+.source-path {
+  font-size: 0.82rem;
+  color: #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+}
+
+.source-delete {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 0.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.source-delete:hover { color: #ff453a; }
+
+.source-add {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.source-add input {
+  flex: 1;
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 0.35rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.85rem;
+}
+.source-add input:focus { outline: none; border-color: #0a84ff; }
+
+.source-add button {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.8rem;
+}
+
 .album-bar {
   display: flex;
   align-items: center;
